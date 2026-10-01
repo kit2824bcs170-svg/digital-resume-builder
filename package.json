@@ -1,0 +1,11 @@
+{
+  "name": "digital-resume-builder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack Digital Resume Builder college project",
+  "scripts": {
+    "start:backend": "cd backend && npm run dev",
+    "start:frontend": "cd frontend && npm run dev",
+    "test:backend": "cd backend && npm run test:flow"
+  }
+}
