@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import resumeService from '../services/resumeService';
 import {
@@ -14,6 +14,7 @@ import { Sparkles, Search, Check, ArrowRight, ShieldCheck, X, Eye } from 'lucide
 const TemplatesPage = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,10 +45,63 @@ const TemplatesPage = () => {
 
     try {
       setCreating(true);
-      const res = await resumeService.createResume({
-        title: `My ${TEMPLATES.find((t) => t.id === templateId)?.name || 'Professional'} Resume`,
+
+      const searchParams = new URLSearchParams(location.search);
+      const currentResumeId = searchParams.get('resumeId');
+
+      if (currentResumeId) {
+        // Applying template to the specific active resume
+        await resumeService.updateTemplate(currentResumeId, { selectedTemplate: templateId });
+        navigate(`/builder/${currentResumeId}`);
+        return;
+      }
+
+      // Check if user has an existing saved resume to carry over their actual data
+      let existingResumeData = null;
+      try {
+        const userResumes = await resumeService.getResumes();
+        const candidateList = Array.isArray(userResumes)
+          ? userResumes
+          : userResumes?.resumes || [];
+        const found =
+          candidateList.find(
+            (r) =>
+              (r.education && r.education.length > 0) ||
+              (r.skills && r.skills.length > 0) ||
+              (r.projects && r.projects.length > 0) ||
+              (r.experience && r.experience.length > 0) ||
+              (r.personalInfo?.summary && r.personalInfo.summary.trim().length > 0)
+          ) || candidateList[0];
+
+        if (found) {
+          existingResumeData = found;
+        }
+      } catch (fetchErr) {
+        console.warn('Could not fetch existing resumes to inherit:', fetchErr);
+      }
+
+      const templateObj = TEMPLATES.find((t) => t.id === templateId);
+
+      const payload = {
+        title: `My ${templateObj?.name || 'Professional'} Resume`,
         selectedTemplate: templateId,
-      });
+        themeColor: templateObj?.defaultColor || '#2563eb',
+        useSampleData: false,
+      };
+
+      if (existingResumeData) {
+        payload.personalInfo = existingResumeData.personalInfo || {};
+        payload.education = existingResumeData.education || [];
+        payload.skills = existingResumeData.skills || [];
+        payload.projects = existingResumeData.projects || [];
+        payload.experience = existingResumeData.experience || [];
+        payload.certifications = existingResumeData.certifications || [];
+        payload.competitiveProgramming = existingResumeData.competitiveProgramming || [];
+        payload.achievements = existingResumeData.achievements || [];
+        payload.languages = existingResumeData.languages || [];
+      }
+
+      const res = await resumeService.createResume(payload);
       const resumeId = res?._id || res?.resume?._id;
       if (resumeId) {
         navigate(`/builder/${resumeId}`);

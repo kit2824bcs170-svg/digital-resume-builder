@@ -234,31 +234,80 @@ exports.createResume = async (req, res, next) => {
 
     const { useSampleData, sampleType, title, selectedTemplate, themeColor } = req.body;
 
+    const hasIncomingData =
+      (req.body.education && req.body.education.length > 0) ||
+      (req.body.skills && req.body.skills.length > 0) ||
+      (req.body.projects && req.body.projects.length > 0) ||
+      (req.body.experience && req.body.experience.length > 0) ||
+      (req.body.personalInfo && (req.body.personalInfo.summary || req.body.personalInfo.phone || req.body.personalInfo.location));
+
+    let basePersonalInfo = {
+      fullName: req.body.personalInfo?.fullName || req.user.name || '',
+      email: req.body.personalInfo?.email || req.user.email || '',
+      professionalTitle: req.body.personalInfo?.professionalTitle || '',
+      phone: req.body.personalInfo?.phone || '',
+      location: req.body.personalInfo?.location || '',
+      linkedin: req.body.personalInfo?.linkedin || '',
+      github: req.body.personalInfo?.github || '',
+      portfolio: req.body.personalInfo?.portfolio || '',
+      summary: req.body.personalInfo?.summary || '',
+    };
+
+    let baseEducation = Array.isArray(req.body.education) ? req.body.education : [];
+    let baseSkills = Array.isArray(req.body.skills) ? req.body.skills : [];
+    let baseProjects = Array.isArray(req.body.projects) ? req.body.projects : [];
+    let baseExperience = Array.isArray(req.body.experience) ? req.body.experience : [];
+    let baseCertifications = Array.isArray(req.body.certifications) ? req.body.certifications : [];
+    let baseCompetitiveProgramming = Array.isArray(req.body.competitiveProgramming) ? req.body.competitiveProgramming : [];
+    let baseAchievements = Array.isArray(req.body.achievements) ? req.body.achievements : [];
+    let baseLanguages = Array.isArray(req.body.languages) ? req.body.languages : [];
+
+    // If no incoming data and not explicitly requesting sample data, inherit user's actual saved resume data
+    if (!hasIncomingData && !useSampleData) {
+      const existingUserResume = await Resume.findOne({
+        userId: req.user._id,
+        $or: [
+          { 'education.0': { $exists: true } },
+          { 'skills.0': { $exists: true } },
+          { 'projects.0': { $exists: true } },
+          { 'experience.0': { $exists: true } },
+          { 'personalInfo.summary': { $exists: true, $ne: '' } },
+        ],
+      }).sort({ updatedAt: -1 });
+
+      if (existingUserResume) {
+        const exPersonal = existingUserResume.personalInfo ? existingUserResume.personalInfo.toObject() : {};
+        basePersonalInfo = {
+          ...exPersonal,
+          fullName: exPersonal.fullName || req.user.name,
+          email: exPersonal.email || req.user.email,
+        };
+        baseEducation = existingUserResume.education || [];
+        baseSkills = existingUserResume.skills || [];
+        baseProjects = existingUserResume.projects || [];
+        baseExperience = existingUserResume.experience || [];
+        baseCertifications = existingUserResume.certifications || [];
+        baseCompetitiveProgramming = existingUserResume.competitiveProgramming || [];
+        baseAchievements = existingUserResume.achievements || [];
+        baseLanguages = existingUserResume.languages || [];
+      }
+    }
+
     // Strict user ownership
     let resumeData = {
       userId: req.user._id,
       title: title?.trim() || `${req.user.name}'s Resume`,
       selectedTemplate: selectedTemplate || 'modern',
       themeColor: themeColor || '#2563eb',
-      personalInfo: {
-        fullName: req.user.name || '',
-        email: req.user.email || '',
-        professionalTitle: '',
-        phone: '',
-        location: '',
-        linkedin: '',
-        github: '',
-        portfolio: '',
-        summary: '',
-      },
-      education: [],
-      skills: [],
-      projects: [],
-      experience: [],
-      certifications: [],
-      competitiveProgramming: [],
-      achievements: [],
-      languages: [],
+      personalInfo: basePersonalInfo,
+      education: baseEducation,
+      skills: baseSkills,
+      projects: baseProjects,
+      experience: baseExperience,
+      certifications: baseCertifications,
+      competitiveProgramming: baseCompetitiveProgramming,
+      achievements: baseAchievements,
+      languages: baseLanguages,
     };
 
     // If the user explicitly asks for sample template data, fill with anonymous placeholder data
@@ -268,6 +317,8 @@ exports.createResume = async (req, res, next) => {
         ...sample,
         userId: req.user._id,
         title: title?.trim() || `${req.user.name}'s Placement Resume`,
+        selectedTemplate: selectedTemplate || sample.selectedTemplate || 'placement',
+        themeColor: themeColor || sample.themeColor || '#000000',
         personalInfo: {
           ...sample.personalInfo,
           fullName: req.user.name || sample.personalInfo.fullName,
@@ -280,6 +331,8 @@ exports.createResume = async (req, res, next) => {
         ...sample,
         userId: req.user._id,
         title: title?.trim() || `${req.user.name}'s Resume`,
+        selectedTemplate: selectedTemplate || sample.selectedTemplate || 'modern',
+        themeColor: themeColor || sample.themeColor || '#2563eb',
         personalInfo: {
           ...sample.personalInfo,
           fullName: req.user.name || sample.personalInfo.fullName,

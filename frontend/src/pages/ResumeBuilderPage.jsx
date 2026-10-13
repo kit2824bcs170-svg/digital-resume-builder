@@ -162,12 +162,16 @@ const ResumeBuilderPage = () => {
     queueAutoSave(updated);
   };
 
-  // Load realistic sample data
-  const handleLoadSample = () => {
-    if (window.confirm('Load sample developer data? This will overwrite empty fields with realistic professional content.')) {
+  // Load realistic sample data while preserving existing name/email
+  const handleLoadSample = (skipConfirm = false) => {
+    if (skipConfirm || window.confirm('Load sample professional data? This will fill in realistic details you can customize.')) {
       const merged = {
         ...resumeData,
-        personalInfo: { ...SAMPLE_RESUME_DATA.personalInfo },
+        personalInfo: {
+          ...SAMPLE_RESUME_DATA.personalInfo,
+          fullName: resumeData.personalInfo?.fullName || SAMPLE_RESUME_DATA.personalInfo.fullName,
+          email: resumeData.personalInfo?.email || SAMPLE_RESUME_DATA.personalInfo.email,
+        },
         education: [...SAMPLE_RESUME_DATA.education],
         skills: [...SAMPLE_RESUME_DATA.skills],
         projects: [...SAMPLE_RESUME_DATA.projects],
@@ -184,8 +188,9 @@ const ResumeBuilderPage = () => {
   };
 
   // Load placement sample data with generic placeholders while keeping user's identity
-  const handleLoadPlacementSample = () => {
+  const handleLoadPlacementSample = (skipConfirm = false) => {
     if (
+      skipConfirm ||
       window.confirm(
         'Load placement sample template? This will populate the editor with sample coursework, skills, and competitive coding data.'
       )
@@ -212,6 +217,18 @@ const ResumeBuilderPage = () => {
       queueAutoSave(merged);
       showToast('Campus placement template data loaded!');
     }
+  };
+
+  // Template switch handler: preserve all existing user data while updating the layout
+  const handleSelectTemplate = (templateId) => {
+    const updated = {
+      ...resumeData,
+      selectedTemplate: templateId,
+    };
+
+    showToast(`Switched template to ${getTemplateById(templateId)?.name || templateId}!`);
+    setResumeData(updated);
+    queueAutoSave(updated);
   };
 
   // Download PDF with zoom reset safeguard
@@ -295,6 +312,13 @@ const ResumeBuilderPage = () => {
   }
 
   const currentTemplate = getTemplateById(resumeData.selectedTemplate) || { name: 'Modern Sidebar' };
+
+  const isEmptyResume =
+    resumeData &&
+    (!resumeData.education || resumeData.education.length === 0) &&
+    (!resumeData.skills || resumeData.skills.length === 0) &&
+    (!resumeData.projects || resumeData.projects.length === 0) &&
+    (!resumeData.experience || resumeData.experience.length === 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 4.25rem)', overflow: 'hidden' }}>
@@ -724,6 +748,68 @@ const ResumeBuilderPage = () => {
             </div>
           </div>
 
+          {/* Empty Template Helper Banner */}
+          {isEmptyResume && (
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '2px dashed #93c5fd',
+                borderRadius: '12px',
+                padding: '1rem 1.25rem',
+                marginBottom: '1.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.85rem',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.08)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div
+                  style={{
+                    backgroundColor: '#eff6ff',
+                    color: '#2563eb',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#1e293b' }}>
+                    Template is showing empty because no sections are filled yet
+                  </h4>
+                  <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                    Load example content to see the full layout and easily replace it with your own details.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => handleLoadSample(true)}
+                  className="btn btn-primary btn-sm"
+                  style={{ fontWeight: 800, fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <Sparkles size={13} /> Populate Example Data
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadPlacementSample(true)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontWeight: 700, fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <GraduationCap size={13} /> Placement Format
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Scaled Preview Sheet */}
           <div
             style={{
@@ -743,7 +829,7 @@ const ResumeBuilderPage = () => {
         isOpen={templateModalOpen}
         onClose={() => setTemplateModalOpen(false)}
         selectedTemplate={resumeData.selectedTemplate}
-        onSelectTemplate={(tmpl) => updateResumeField('selectedTemplate', tmpl)}
+        onSelectTemplate={handleSelectTemplate}
         themeColor={resumeData.themeColor}
         onSelectColor={(color) => updateResumeField('themeColor', color)}
         fontSize={resumeData.fontSize}

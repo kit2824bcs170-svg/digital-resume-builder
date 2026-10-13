@@ -18,49 +18,52 @@ import ElegantTemplate from '../../templates/ElegantTemplate';
 import AcademicTemplate from '../../templates/AcademicTemplate';
 import InternationalTemplate from '../../templates/InternationalTemplate';
 
+import { mapResumeDataForTemplate } from '../../utils/templateDataMapper';
+
 const ResumePreview = forwardRef(({ resumeData, isThumbnail = false }, ref) => {
-  const template = resumeData?.selectedTemplate || 'modern-sidebar';
+  const mappedData = mapResumeDataForTemplate(resumeData);
+  const template = mappedData?.selectedTemplate || 'modern-sidebar';
 
   const renderTemplate = () => {
     switch (template) {
       case 'classic-pro':
       case 'classic':
-        return <ClassicTemplate data={resumeData} />;
+        return <ClassicTemplate data={mappedData} />;
       case 'modern-sidebar':
-        return <ModernSidebarTemplate data={resumeData} />;
+        return <ModernSidebarTemplate data={mappedData} />;
       case 'executive':
-        return <ExecutiveTemplate data={resumeData} />;
+        return <ExecutiveTemplate data={mappedData} />;
       case 'minimal-ats':
       case 'minimal':
-        return <MinimalATSTemplate data={resumeData} />;
+        return <MinimalATSTemplate data={mappedData} />;
       case 'modern-blue':
-        return <ModernBlueTemplate data={resumeData} />;
+        return <ModernBlueTemplate data={mappedData} />;
       case 'developer':
-        return <DeveloperTemplate data={resumeData} />;
+        return <DeveloperTemplate data={mappedData} />;
       case 'student-fresher':
-        return <StudentTemplate data={resumeData} />;
+        return <StudentTemplate data={mappedData} />;
       case 'two-column':
-        return <TwoColumnTemplate data={resumeData} />;
+        return <TwoColumnTemplate data={mappedData} />;
       case 'dark-header':
-        return <DarkHeaderTemplate data={resumeData} />;
+        return <DarkHeaderTemplate data={mappedData} />;
       case 'compact':
-        return <CompactTemplate data={resumeData} />;
+        return <CompactTemplate data={mappedData} />;
       case 'modern-green':
-        return <ModernGreenTemplate data={resumeData} />;
+        return <ModernGreenTemplate data={mappedData} />;
       case 'creative':
-        return <CreativeTemplate data={resumeData} />;
+        return <CreativeTemplate data={mappedData} />;
       case 'elegant-minimal':
-        return <ElegantTemplate data={resumeData} />;
+        return <ElegantTemplate data={mappedData} />;
       case 'academic':
-        return <AcademicTemplate data={resumeData} />;
+        return <AcademicTemplate data={mappedData} />;
       case 'international':
-        return <InternationalTemplate data={resumeData} />;
+        return <InternationalTemplate data={mappedData} />;
       case 'placement':
       case 'madhumithra':
-        return <PlacementTemplate data={resumeData} />;
+        return <PlacementTemplate data={mappedData} />;
       case 'modern':
       default:
-        return <ModernSidebarTemplate data={resumeData} />;
+        return <ModernSidebarTemplate data={mappedData} />;
     }
   };
 
